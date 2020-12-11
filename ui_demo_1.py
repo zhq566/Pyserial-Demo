@@ -245,6 +245,10 @@ class Ui_Form(object):
     def TableViewSelectBehavior(self):
         indexs = self.tableView.selectionModel().selection().indexes()
         if len(indexs) > 0:
-            row = indexs[0].row()
-            column = indexs[0].column()
+            self.row = indexs[0].row()
+            self.column = indexs[0].column()
+            self.val = indexs[0].data()
+            #print(val)
             #print("{},{}".format(row, column))
+            self.textPidCurSelect.setText("row:{}, column:{}, val:{}".format(self.row, self.column, self.val))
+
