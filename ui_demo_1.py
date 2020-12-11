@@ -248,6 +248,7 @@ class Ui_Form(object):
             self.row = indexs[0].row()
             self.column = indexs[0].column()
             self.val = indexs[0].data()
+            #indexs[0].model().setData(indexs[0], "50")
             #print(val)
             #print("{},{}".format(row, column))
             self.textPidCurSelect.setText("row:{}, column:{}, val:{}".format(self.row, self.column, self.val))
