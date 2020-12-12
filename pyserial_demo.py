@@ -1,10 +1,64 @@
 import sys
+import binascii
 import serial
 import serial.tools.list_ports
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import QTimer
 from ui_demo_1 import Ui_Form
+
+
+class MyPidTool(object):
+    def __init__(self):
+        self.frameDefaultLen = 8
+        self.curFrameLen = 0
+        self.curFrameRightLen = self.frameDefaultLen
+        self.data = ""
+
+    def ClearData(self):
+        self.curFrameLen = 0
+        self.curFrameRightLen = self.frameDefaultLen
+        self.data = ""
+
+    def FrameReso_0x64(self, str, demo):
+        idx = str[6]
+        pidtype = str[7]
+        val = str[9] * 256 + str[8]  # 先送低位 再送高位
+        indexs = demo.tableView.selectionModel().selection().indexes()
+        if (indexs > 0):
+            # indexs[0].model().setData(indexs[0], val)
+            pass
+
+    def FrameReso(self, str, demo):
+        # print(str)
+        if (str[3] == 0x64):
+            self.FrameReso_0x64(str, demo)
+
+    def input_one_char(self, char, demo):
+        self.data += "{:0>2X}".format(char)
+        if self.curFrameLen == 0:
+            if char == 0x7e:
+                self.curFrameLen += 1
+        elif self.curFrameLen == 1:
+            if char == 0x7e:
+                self.curFrameLen += 1
+            else:
+                self.curFrameLen = 0
+        elif self.curFrameLen == 4:
+            self.curFrameRightLen = char + self.frameDefaultLen
+            if self.curFrameRightLen > 100:
+                self.ClearData()
+                return
+            self.curFrameLen += 1
+        elif self.curFrameLen != 0:
+            self.curFrameLen += 1
+        else:
+            pass
+
+        if self.curFrameLen == self.curFrameRightLen:
+            # print(self.data)
+            self.FrameReso(binascii.a2b_hex(self.data), demo)
+            self.ClearData()
 
 
 class Pyqt5_Serial(QtWidgets.QWidget, Ui_Form):
@@ -21,6 +75,8 @@ class Pyqt5_Serial(QtWidgets.QWidget, Ui_Form):
         self.lineEdit.setText(str(self.data_num_received))
         self.data_num_sended = 0
         self.lineEdit_2.setText(str(self.data_num_sended))
+
+        self.myPidToolObj = MyPidTool()
 
     def init(self):
         # 串口检测按钮
@@ -152,6 +208,10 @@ class Pyqt5_Serial(QtWidgets.QWidget, Ui_Form):
             data = self.ser.read(num)
             num = len(data)
             # hex显示
+            # print(data)
+            for i in range(0, len(data)):
+                self.myPidToolObj.input_one_char(data[i], self)
+                # print(data[i])
             if self.hex_receive.checkState():
                 out_s = ''
                 for i in range(0, len(data)):
