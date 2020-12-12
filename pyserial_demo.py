@@ -1,4 +1,5 @@
 import sys
+import re
 import binascii
 import serial
 import serial.tools.list_ports
@@ -15,24 +16,31 @@ class MyPidTool(object):
         self.curFrameRightLen = self.frameDefaultLen
         self.data = ""
 
-    def ClearData(self):
+    def clear_data(self):
         self.curFrameLen = 0
         self.curFrameRightLen = self.frameDefaultLen
         self.data = ""
 
-    def FrameReso_0x64(self, str, demo):
-        idx = str[6]
-        pidtype = str[7]
-        val = str[9] * 256 + str[8]  # 先送低位 再送高位
-        indexs = demo.tableView.selectionModel().selection().indexes()
-        if (indexs > 0):
-            # indexs[0].model().setData(indexs[0], val)
-            pass
+    def frame_reso_0x64(self, str, demo):
+        idx = 0
+        pidtype = 0
+        if str[5] == 0x41:
+            idx = str[6]
+            pidtype = str[7]
+            val = str[9] * 256 + str[8]  # 先送低位 再送高位
+            indexs = demo.tableView.selectionModel().selection().indexes()
+            if (len(indexs) > 0):
+                if int(indexs[0].row()) == pidtype and int(indexs[0].column()) == idx:
+                    demo.textPidCurSelect.setText("received idx:{}, pidType:{}, val:{}".format(idx, pidtype, val))
+                    indexs[0].model().setData(indexs[0], val)
+            #pass
+        #print("frame_reso_0x64 finished")
 
-    def FrameReso(self, str, demo):
+
+    def frame_reso(self, str, demo):
         # print(str)
         if (str[3] == 0x64):
-            self.FrameReso_0x64(str, demo)
+            self.frame_reso_0x64(str, demo)
 
     def input_one_char(self, char, demo):
         self.data += "{:0>2X}".format(char)
@@ -47,7 +55,7 @@ class MyPidTool(object):
         elif self.curFrameLen == 4:
             self.curFrameRightLen = char + self.frameDefaultLen
             if self.curFrameRightLen > 100:
-                self.ClearData()
+                self.clear_data()
                 return
             self.curFrameLen += 1
         elif self.curFrameLen != 0:
@@ -57,8 +65,8 @@ class MyPidTool(object):
 
         if self.curFrameLen == self.curFrameRightLen:
             # print(self.data)
-            self.FrameReso(binascii.a2b_hex(self.data), demo)
-            self.ClearData()
+            self.frame_reso(binascii.a2b_hex(self.data), demo)
+            self.clear_data()
 
 
 class Pyqt5_Serial(QtWidgets.QWidget, Ui_Form):
@@ -108,6 +116,10 @@ class Pyqt5_Serial(QtWidgets.QWidget, Ui_Form):
 
         # 清除接收窗口
         self.s2__clear_button.clicked.connect(self.receive_data_clear)
+
+        # pid tool
+        self.GetPidValue.clicked.connect(self.pid_tool_get_val)
+        self.SetPidValue.clicked.connect(self.pid_tool_set_val)
 
     # 串口检测
     def port_check(self):
@@ -250,6 +262,78 @@ class Pyqt5_Serial(QtWidgets.QWidget, Ui_Form):
     def receive_data_clear(self):
         self.s2__receive_text.setText("")
 
+    def pid_tool_send_text(self, input_s):
+        # hex发送
+        input_s = input_s.strip()
+        send_list = []
+        while input_s != '':
+            try:
+                num = int(input_s[0:2], 16)
+            except ValueError:
+                QMessageBox.critical(self, 'wrong data', '请输入十六进制数据，以空格分开!')
+                return None
+            input_s = input_s[2:].strip()
+            send_list.append(num)
+        input_s = bytes(send_list)
+        num = self.ser.write(input_s)
+        self.data_num_sended += num
+        self.lineEdit_2.setText(str(self.data_num_sended))
+
+    def pid_tool_get_val(self):
+        sendText = "7E7E0A12"
+        cmd = ""
+        para = ""
+        row = 0
+        column = 0
+        endText = "000D0A"
+        strLen = "0003" #new
+        #strLen = "03"  # old
+        cmd = "41"
+        indexs = self.tableView.selectionModel().selection().indexes()
+        if len(indexs) > 0:
+            row = indexs[0].row()
+            column = indexs[0].column()
+        para = "{:0>2X}{:0>2X}".format(column, row + 1)
+        sendText += strLen
+        sendText += cmd
+        sendText += para
+        sendText += endText
+        text_list = re.findall(".{2}", sendText)
+        sendText = " ".join(text_list)
+        self.s3__send_text.setText(sendText)
+        self.pid_tool_send_text(sendText)
+
+    def pid_tool_set_val(self):
+        sendText = "7E7E0A12"
+        cmd = ""
+        para = ""
+        row = 0
+        column = 0
+        val = 0
+        endText = "000D0A"
+        strLen = "0005" #new
+        #strLen = "05" #old
+        cmd = "42"
+        indexs = self.tableView.selectionModel().selection().indexes()
+        if len(indexs) > 0:
+            row = indexs[0].row()
+            column = indexs[0].column()
+            if indexs[0].data() != None:
+                if int(indexs[0].data()) > 0xffff:
+                    self.textPidCurSelect.setText("选择的单元格值错误")
+                    return
+                val = int(indexs[0].data())
+            else:
+                return
+        para = "{:0>2X}{:0>2X}{:0>4X}".format(column, row + 1, val)
+        sendText += strLen
+        sendText += cmd
+        sendText += para
+        sendText += endText
+        text_list = re.findall(".{2}", sendText)
+        sendText = " ".join(text_list)
+        self.s3__send_text.setText(sendText)
+        self.pid_tool_send_text(sendText)
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)

@@ -240,16 +240,17 @@ class Ui_Form(object):
         model.setHorizontalHeaderLabels(['idx_0', 'idx_1', 'idx_2', 'idx_3',
                                          'idx_4', 'idx_5', 'idx_6', 'idx_7',
                                          'idx_8', 'idx_9', 'idx_10', 'idx_11'])
+        model.setVerticalHeaderLabels(['KP', 'KI', 'KD', 'KP_L', 'KD_L'])
         tableView.setModel(model)
 
     def TableViewSelectBehavior(self):
         indexs = self.tableView.selectionModel().selection().indexes()
         if len(indexs) > 0:
-            self.row = indexs[0].row()
-            self.column = indexs[0].column()
-            self.val = indexs[0].data()
+            row = indexs[0].row()
+            column = indexs[0].column()
+            val = indexs[0].data()
             #indexs[0].model().setData(indexs[0], "50")
             #print(val)
             #print("{},{}".format(row, column))
-            self.textPidCurSelect.setText("row:{}, column:{}, val:{}".format(self.row, self.column, self.val))
+            self.textPidCurSelect.setText("row:{}, column:{}, val:{}".format(row, column, val))
 
