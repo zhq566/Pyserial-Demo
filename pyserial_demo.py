@@ -30,15 +30,15 @@ class MyPidTool(object):
             val = str[9] * 256 + str[8]  # 先送低位 再送高位
             indexs = demo.tableView.selectionModel().selection().indexes()
             if (len(indexs) > 0):
-                if int(indexs[0].row()) == pidtype and int(indexs[0].column()) == idx:
+                if int(indexs[0].row()) + 1 == pidtype and int(indexs[0].column()) == idx:
                     demo.textPidCurSelect.setText("received idx:{}, pidType:{}, val:{}".format(idx, pidtype, val))
                     indexs[0].model().setData(indexs[0], val)
             #pass
-        #print("frame_reso_0x64 finished")
+        print("frame_reso_0x64 finished")
 
 
     def frame_reso(self, str, demo):
-        # print(str)
+        #print(str)
         if (str[3] == 0x64):
             self.frame_reso_0x64(str, demo)
 
