@@ -34,7 +34,7 @@ class MyPidTool(object):
                     demo.textPidCurSelect.setText("received idx:{}, pidType:{}, val:{}".format(idx, pidtype, val))
                     indexs[0].model().setData(indexs[0], val)
             #pass
-        print("frame_reso_0x64 finished")
+        #print("frame_reso_0x64 finished")
 
 
     def frame_reso(self, str, demo):
